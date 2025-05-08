@@ -17,7 +17,7 @@ fn main() {
 fn test_binary_search_tree(){
     let rootlink: BstNodeLink = BstNode::new_bst_nodelink(15);
     rootlink.borrow_mut().add_left_child(&rootlink, 6);
-    rootlink.borrow_mut().add_right_child(&rootlink, 18);
+    rootlink.borrow_mut().add_right_child(&rootlink, 20);
 
     //add right subtree
     let right_subtree: &Option<BstNodeLink> = &rootlink.borrow().right;
@@ -104,7 +104,7 @@ fn test_binary_search_tree(){
             print!("successor of node ({}) is ", key);
 
             if let Some(successor) = BstNode::tree_successor_simpler(&node) {
-                println!("{:?}", successor.borrow().key);
+                println!("{:#?}", successor.borrow().key);
             } else {
                 println!("not found");
             }
@@ -125,6 +125,39 @@ fn test_binary_search_tree(){
         let rootalter = BstNode::tree_delete(&rootlink2.as_ref().unwrap());
         generate_dotfile_bst(&rootalter, "bst_delete_root.dot");
     }
+        //Add node
+        let after_add_tree_path = "bst_aplh.dot";
+        generate_dotfile_bst(&rootlink, after_add_tree_path);
+        {
+            let result = rootlink.borrow_mut().add_node(&rootlink, 6);
+            println!("Add node 6 result: {}", result);
+        }
+        // Should return False, because the same number
+        {
+            let result = rootlink.borrow_mut().add_node(&rootlink, 6);
+            println!("Add node 6 (duplicate) result: {}", result); 
+        }
+        let after_add_tree_path = "bst_after_add.dot";
+        generate_dotfile_bst(&rootlink, after_add_tree_path);
+
+        //Test Predecessor
+        if let Some(left_child) = &rootlink.borrow().left {
+            if let Some(predecessor) = BstNode::tree_predecessor(left_child) {
+                println!("Predecessor of 6: {:?}", predecessor.borrow().key); 
+            } else {
+                println!("No predecessor found for the left child.");
+            }
+        } else {
+            println!("Left child does not exist for the root.");
+        }
+    
+        // Test median 
+        let median_node = rootlink.borrow().median();
+        println!("Median of the tree: {:?}", median_node.borrow().key); 
+    
+        // Test tree_rebalance
+        let rebalanced_tree = BstNode::tree_rebalance(&rootlink);
+        generate_dotfile_bst(&rebalanced_tree, "bst_rebalanced.dot");
 }
 
 fn test_index(){

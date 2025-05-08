@@ -352,4 +352,110 @@ impl BstNode {
             Some(x) => Some(x.upgrade().unwrap()),
         }
     }
+
+    pub fn add_node(&self, target_node: &BstNodeLink, value: i32) -> bool {
+        fn helper(current: &Option<BstNodeLink>, target: &BstNodeLink, value: i32) -> bool {
+            if let Some(current_rc) = current {
+                if Rc::ptr_eq(current_rc, target) {
+                    let mut current_mut = current_rc.borrow_mut();
+                    if value < current_mut.key.unwrap() {
+                        if current_mut.left.is_none() {
+                            current_mut.left = Some(BstNode::new_with_parent(current_rc, value));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        if current_mut.right.is_none() {
+                            current_mut.right = Some(BstNode::new_with_parent(current_rc, value));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                } else {
+                    let left_result = helper(&current_rc.borrow().left, target, value);
+                    if left_result {
+                        return true;
+                    }
+                    return helper(&current_rc.borrow().right, target, value);
+                }
+            }
+            false
+        }
+        helper(&Some(self.get_bst_nodelink_copy()), target_node, value)
+    }
+
+    // Find the predecessor of a node
+    pub fn tree_predecessor(node: &BstNodeLink) -> Option<BstNodeLink> {
+        // Check if the node has a left child, find the maximum in that subtree
+        if let Some(left_child) = &node.borrow().left {
+            return Some(left_child.borrow().maximum());
+        }
+        
+        // If no left child
+        let mut current_node = node.clone();
+        loop {
+            let parent_node = match BstNode::upgrade_weak_to_strong(current_node.borrow().parent.clone()) {
+                Some(parent) => parent,
+                None => return None,
+            };
+        
+            if let Some(left_child) = &parent_node.borrow().left {
+                if BstNode::is_node_match(left_child, &current_node) {
+                    return Some(parent_node.clone());
+                }
+            }
+        
+            current_node = parent_node;
+        }
+    }
+    
+    
+    // Find the median of the tree
+    pub fn median(&self) -> BstNodeLink {
+        let mut nodes = Vec::new();
+        self.in_order_traversal(&mut nodes);
+        let mid_index = nodes.len() / 2;
+        nodes[mid_index].clone()
+    }
+
+    // Perform an in-order traversal to gather nodes
+    fn in_order_traversal(&self, nodes: &mut Vec<BstNodeLink>) {
+        if let Some(left) = &self.left {
+            left.borrow().in_order_traversal(nodes);
+        }
+        nodes.push(self.get_bst_nodelink_copy());
+        if let Some(right) = &self.right {
+            right.borrow().in_order_traversal(nodes);
+        }
+    }
+
+    // Rebalance the tree starting from a given node
+    pub fn tree_rebalance(node: &BstNodeLink) -> BstNodeLink {
+        let mut nodes = Vec::new();
+        node.borrow().in_order_traversal(&mut nodes);
+
+        // Rebuild the tree with nodes sorted in the correct order
+        BstNode::rebalance_from_nodes(&nodes, 0, nodes.len())
+    }
+
+    fn rebalance_from_nodes(nodes: &[BstNodeLink], start: usize, end: usize) -> BstNodeLink {
+        if start >= end {
+            return nodes[start].clone();
+        }
+        let mid = (start + end) / 2;
+        let root = nodes[mid].clone();
+
+        if mid > start {
+            let left_subtree = BstNode::rebalance_from_nodes(nodes, start, mid);
+            root.borrow_mut().left = Some(left_subtree);
+        }
+        if mid + 1 < end {
+            let right_subtree = BstNode::rebalance_from_nodes(nodes, mid + 1, end);
+            root.borrow_mut().right = Some(right_subtree);
+        }
+
+        root
+    }
 }

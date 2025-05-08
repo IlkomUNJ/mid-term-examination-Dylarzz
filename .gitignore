@@ -1,3 +1,5 @@
 builddir/*
 target/*
 *.dot
+*.png
+*.jpg
